@@ -45,7 +45,7 @@ jobs:
         with:
           file: Dockerfile
           platforms: linux/amd64,linux/arm64,linux/arm/v7
-          push: true
+          push: ${{ steps.docker_meta_debian.outputs.tags != '' }}
           tags: ${{ steps.docker_meta_debian.outputs.tags }}
           labels: ${{ steps.docker_meta_debian.outputs.labels }}
 
@@ -91,7 +91,7 @@ jobs:
         with:
           file: Dockerfile.alpine
           platforms: linux/amd64,linux/arm64,linux/arm/v7
-          push: true
+          push: ${{ steps.docker_meta_alpine.outputs.tags != '' }}
           tags: ${{ steps.docker_meta_alpine.outputs.tags }}
           labels: ${{ steps.docker_meta_alpine.outputs.labels }}
 
