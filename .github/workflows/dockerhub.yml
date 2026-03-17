@@ -3,9 +3,7 @@ name: DockerHub
 on:
   push:
     branches:
-      - '*'
-    tags:
-      - '*'
+      - '**'
 
 jobs:
   multiarch-build-debian:
@@ -24,9 +22,9 @@ jobs:
           images: |
             neilpang/letsproxy
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=latest,enable=${{ endsWith(github.ref, github.event.repository.default_branch) }}
+            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
+            type=ref,event=branch
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -45,7 +43,7 @@ jobs:
         with:
           file: Dockerfile
           platforms: linux/amd64,linux/arm64,linux/arm/v7
-          push: ${{ steps.docker_meta_debian.outputs.tags != '' }}
+          push: true
           tags: ${{ steps.docker_meta_debian.outputs.tags }}
           labels: ${{ steps.docker_meta_debian.outputs.labels }}
 
@@ -68,9 +66,8 @@ jobs:
           images: |
             neilpang/letsproxy
           tags: |
-            type=semver,suffix=-alpine,pattern={{version}}
-            type=semver,suffix=-alpine,pattern={{major}}.{{minor}}
-            type=raw,value=alpine,enable=${{ endsWith(github.ref, github.event.repository.default_branch) }}
+            type=raw,value=alpine,enable=${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
+            type=ref,suffix=-alpine,event=branch
           flavor: latest=false
 
       - name: Set up QEMU
@@ -91,7 +88,7 @@ jobs:
         with:
           file: Dockerfile.alpine
           platforms: linux/amd64,linux/arm64,linux/arm/v7
-          push: ${{ steps.docker_meta_alpine.outputs.tags != '' }}
+          push: true
           tags: ${{ steps.docker_meta_alpine.outputs.tags }}
           labels: ${{ steps.docker_meta_alpine.outputs.labels }}
 
