@@ -42,7 +42,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           file: Dockerfile
-          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/s390x
           push: true
           tags: ${{ steps.docker_meta_debian.outputs.tags }}
           labels: ${{ steps.docker_meta_debian.outputs.labels }}
@@ -87,7 +87,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           file: Dockerfile.alpine
-          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/s390x
           push: true
           tags: ${{ steps.docker_meta_alpine.outputs.tags }}
           labels: ${{ steps.docker_meta_alpine.outputs.labels }}
