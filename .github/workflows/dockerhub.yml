@@ -3,9 +3,7 @@ name: DockerHub
 on:
   push:
     branches:
-      - '*'
-    tags:
-      - '*'
+      - '**'
 
 jobs:
   multiarch-build-debian:
@@ -13,20 +11,20 @@ jobs:
     steps:
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Get Docker tags for Debian based image
         id: docker_meta_debian
-        uses: crazy-max/ghaction-docker-meta@v2
+        uses: docker/metadata-action@v5
         with:
           images: |
             neilpang/letsproxy
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=latest,enable=${{ endsWith(github.ref, github.event.repository.default_branch) }}
+            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
+            type=ref,event=branch
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -34,7 +32,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Login to DockerHub
-        uses: docker/login-action@v3 
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -57,20 +55,19 @@ jobs:
     steps:
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Get Docker tags for Alpine based image
         id: docker_meta_alpine
-        uses: crazy-max/ghaction-docker-meta@v2
+        uses: docker/metadata-action@v5
         with:
           images: |
             neilpang/letsproxy
           tags: |
-            type=semver,suffix=-alpine,pattern={{version}}
-            type=semver,suffix=-alpine,pattern={{major}}.{{minor}}
-            type=raw,value=alpine,enable=${{ endsWith(github.ref, github.event.repository.default_branch) }}
+            type=raw,value=alpine,enable=${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
+            type=ref,suffix=-alpine,event=branch
           flavor: latest=false
 
       - name: Set up QEMU
