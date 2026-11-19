@@ -1,4 +1,44 @@
-FROM nginxproxy/nginx-proxy:latest
+# syntax=docker/dockerfile:1
+
+# nginx version of the final image.
+# nginxproxy/nginx-proxy:latest still ships nginx 1.31.6, which is vulnerable
+# to CVE-2026-123007 / CVE-2026-123633 (HTTP/2, and HTTP/2 is always on in
+# nginx.tmpl) among others; the fixes are in nginx 1.31.9 / 1.30.7.
+# So the image is built on the official nginx image and only the nginx-proxy
+# parts are copied over, the same way upstream's Dockerfile.debian assembles
+# its own image. Once upstream ships a fixed nginx
+# (nginx-proxy/nginx-proxy#2792) this can go back to a plain
+# "FROM nginxproxy/nginx-proxy:latest".
+ARG NGINX_VERSION=1.31.9
+
+FROM nginxproxy/nginx-proxy:latest AS nginx-proxy
+
+FROM nginx:${NGINX_VERSION}
+
+# Same environment as upstream's Dockerfile.debian. acme-companion relies on
+# DOCKER_GEN_VERSION being set, the value itself does not matter.
+ARG NGINX_PROXY_VERSION
+ARG DOCKER_GEN_VERSION="unknown"
+ENV NGINX_PROXY_VERSION=${NGINX_PROXY_VERSION} \
+    DOCKER_GEN_VERSION=${DOCKER_GEN_VERSION} \
+    DOCKER_HOST=unix:///tmp/docker.sock
+
+# Same nginx.conf changes as upstream's Dockerfile.debian.
+RUN echo "\ninclude /etc/nginx/toplevel.conf.d/*.conf;" >> /etc/nginx/nginx.conf \
+ && sed -i 's/worker_connections.*;$/worker_connections  10240;/' /etc/nginx/nginx.conf \
+ && sed -i -e '/^\}$/{s//\}\nworker_rlimit_nofile 20480;/;:a' -e '$!N;$!ba' -e '}' /etc/nginx/nginx.conf \
+ && mkdir -p '/etc/nginx/toplevel.conf.d' \
+ && mkdir -p '/etc/nginx/dhparam' \
+ && mkdir -p '/etc/nginx/certs' \
+ && mkdir -p '/usr/share/nginx/html/errors'
+
+# forego, docker-gen, network_internal.conf and /app (entrypoint, Procfile,
+# dhparam, nginx.tmpl) from the nginx-proxy image.
+COPY --from=nginx-proxy /usr/local/bin/forego /usr/local/bin/forego
+COPY --from=nginx-proxy /usr/local/bin/docker-gen /usr/local/bin/docker-gen
+COPY --from=nginx-proxy /etc/nginx/network_internal.conf /etc/nginx/
+COPY --from=nginx-proxy /app/ /app/
+WORKDIR /app/
 
 RUN apt-get update \
  && apt-get install -y -q --no-install-recommends \
